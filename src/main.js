@@ -10,8 +10,9 @@ const client = new Client({
 const YoutubeMp3Downloader = require('youtube-mp3-downloader')
 const fs = require('fs')
 
-client.commands = new Collection();
+client.commands = new Collection()
 client.commandArr = []
+client.buttons = new Collection()
 client.cycle = 0
 
 class Queue {
@@ -86,6 +87,7 @@ for (const file of deploys) {
 }
 client.handleEvents()
 client.handleCommands()
+client.handleComponents()
 client.login(token)
 
 /*

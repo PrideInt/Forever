@@ -34,7 +34,7 @@ module.exports = {
             .setDescription(description)
 
         await interaction.reply({
-            embeds: [embed]
+            embeds: [embed], ephemeral: true
         })
     }
 }

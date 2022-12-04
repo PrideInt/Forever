@@ -1,8 +1,8 @@
 module.exports = {
     name: "interactionCreate",
     async execute(interaction, client) {
-        const {commands} = client
-        const {commandName} = interaction
+        const {commands, buttons} = client
+        const {commandName, customId} = interaction
 
         if (interaction.isChatInputCommand()) {
             const command = commands.get(commandName)
@@ -11,11 +11,9 @@ module.exports = {
                 return;
             }
             try {
-                if (command.name === 'play') {
-                    if (client.cycle === 0) {
-                        commands.get(commandName).handler({client, interaction})        
-                        client.cycle++
-                    }
+                if (command.name === 'play' && client.cycle === 0) {
+                    commands.get(commandName).handler({client, interaction})        
+                    client.cycle++
                 }
                 try {
                     await command.execute(interaction, client)
@@ -39,6 +37,15 @@ module.exports = {
                 await command.autocomplete(interaction, client);
             } catch (error) {
                 console.error(error);
+            }
+        } else if (interaction.isButton()) {
+            const button = buttons.get(customId)
+            if (button.data.name === 'skip-b') {
+                try {
+                    await button.execute(interaction, client)
+                } catch (e) {
+                    console.log(e)
+                }
             }
         }
     }

@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js')
+const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js')
 const { joinVoiceChannel, getVoiceConnection, createAudioPlayer, createAudioResource, AudioPlayerStatus } = require('@discordjs/voice')
 
 const fs = require('fs')
@@ -57,7 +57,7 @@ module.exports = {
             await interaction.reply('You must use commands in **' + client.audioChannel.name + '**.')
             return;
         } else if (interaction.member.voice.channelId == null) {
-            await interaction.reply("You must be in a voice channel to use this command.")
+            await interaction.reply('You must use commands in **' + client.audioChannel.name + '**.')
             return;
         }
         const option = interaction.options.getString("source")
@@ -68,6 +68,7 @@ module.exports = {
 
         let title
         let videoId
+        let videos
 
         const vc = joinVoiceChannel({
             channelId: channel,
@@ -75,7 +76,6 @@ module.exports = {
             adapterCreator: interaction.guild.voiceAdapterCreator
         })
         conn = getVoiceConnection(guildId)
-        const videos = await ytsearch.search(track)
 
         if (url(track)) {
             switch (option) {
@@ -88,6 +88,8 @@ module.exports = {
                     }
                     start++
                     videoId = track.substring(start)
+
+                    videos = await ytsearch.search(videoId)
                     break
                 case "spotify":
                     break
@@ -95,12 +97,17 @@ module.exports = {
                     break
             }
         } else {
+            videos = await ytsearch.search(track)
             videoId = videos[0].id.videoId
         }
         title = videos[0].title
 
         const file = fs.readdirSync('./youtube/mp3').filter((f) => f.includes(title) && f.endsWith(".mp3"))
-        await interaction.reply({content: 'Adding ' + '**' + title + '**' + ' to the queue...'})
+        try {
+            await interaction.reply({content: 'Adding ' + '**' + title + '**' + ' to the queue...'})
+        } catch (e) { 
+            console.log('no')
+        }
 
         // If we already have the file somewhere in your local disk, we will
         // add that to the queue instead of manually downloading it again,
@@ -117,9 +124,17 @@ module.exports = {
                 thumbnail: videos[0].snippet.thumbnails.url,
                 file: './youtube/mp3/' + title + '.mp3'
             }
+            let queuePosition = '' + client.queue.length
+            let message = '**' + data.title + '**' + ' added to queue ' + client.queue.length + '.'
+            let addButton = false
+
             if (client.player.state.status === 'idle') {
                 client.player.play(createAudioResource(data.file))
                 conn.subscribe(client.player)
+
+                queuePosition = 'Current'
+                message = 'Now playing...'
+                addButton = true
             }
             const embed = new EmbedBuilder()
                 .setTitle(data.title)
@@ -129,16 +144,31 @@ module.exports = {
                     iconURL: data.user.displayAvatarURL()
                 })
                 .addFields({
-                    name: 'Queue position:', value: '' + client.queue.length
+                    name: 'Queue position:', value: queuePosition
                 })
-            client.audioChannel.send({
-                content: '**' + data.title + '**' + ' added to queue ' + client.queue.length + '.', embeds: [embed]
-            })
+
+            if (addButton) {
+                const row = new ActionRowBuilder()
+                    .addComponents(
+                        new ButtonBuilder()
+                            .setCustomId('skip-b')
+                            .setLabel('Skip')
+                            .setStyle(ButtonStyle.Primary),
+                    )
+                client.audioChannel.send({
+                    content: message, embeds: [embed], components: [row]
+                })
+            } else {
+                client.audioChannel.send({
+                    content: message, embeds: [embed]
+                })
+            }
             client.queue.enqueue(data)
         }
     },
 
     handler: async ({ client, interaction }) => {
+        console.log('doing this')
         client.ytmp3.on("finished", function(err, data) {
             for (let i = 0; i < client.videoUserData.length; i++) {
                 if (client.videoUserData.get(i).videoId === data.videoId) {
@@ -148,9 +178,17 @@ module.exports = {
                     break;
                 }
             }
+            let queuePosition = '' + client.queue.length
+            let message = '**' + data.title + '**' + ' added to queue ' + client.queue.length + '.'
+            let addButton = false
+
             if (client.player.state.status === 'idle') {
                 client.player.play(createAudioResource(data.file))
                 conn.subscribe(client.player)
+
+                queuePosition = 'Current'
+                message = 'Now playing...'
+                addButton = true
             }
             const embed = new EmbedBuilder()
                 .setTitle(data.title)
@@ -160,19 +198,31 @@ module.exports = {
                     iconURL: data.user.displayAvatarURL()
                 })
                 .addFields({
-                    name: 'Queue position:', value: '' + client.queue.length
+                    name: 'Queue position:', value: queuePosition
                 })
 
-            client.audioChannel.send({
-                content: 'Now playing...', embeds: [embed]
-            })
+            if (addButton) {
+                const row = new ActionRowBuilder()
+                    .addComponents(
+                        new ButtonBuilder()
+                            .setCustomId('skip-b')
+                            .setLabel('Skip')
+                            .setStyle(ButtonStyle.Primary),
+                    )
+                client.audioChannel.send({
+                    content: message, embeds: [embed], components: [row]
+                })
+            } else {
+                client.audioChannel.send({
+                    content: message, embeds: [embed]
+                })
+            }
             client.queue.enqueue(data)
         });
 
         client.player.on(AudioPlayerStatus.Idle, () => {
-            if (!client.queue.isEmpty && client.queue.length > 1) {
-                const data = client.queue.get(1)
-                client.queue.dequeue()
+            if (!client.queue.isEmpty && client.queue.length >= 1) {
+                const data = client.queue.get(0)
 
                 const resource = createAudioResource(data.file)
 
@@ -184,8 +234,16 @@ module.exports = {
                         iconURL: data.user.displayAvatarURL()
                     })
 
+                const row = new ActionRowBuilder()
+                    .addComponents(
+                        new ButtonBuilder()
+                            .setCustomId('skip-b')
+                            .setLabel('Skip')
+                            .setStyle(ButtonStyle.Primary),
+                    )
+
                 client.audioChannel.send({
-                    content: 'Now playing...', embeds: [embed]
+                    content: 'Now playing...', embeds: [embed], components: [row]
                 })
                 client.player.play(resource)
             }
@@ -197,11 +255,6 @@ module.exports = {
                 client.videoUserData.remove(client.videoUserData.length - 1)
             }
         })
-        
-        client.ytmp3.on("error", function(error) {
-            console.log('Error downloading youtube stuff')
-            console.log(JSON.stringify(error));
-        });
 
         /*
         client.ytmp3.on("progress", function(progress) {
