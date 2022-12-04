@@ -15,7 +15,7 @@ module.exports = {
 
         client.ytmp3.on("progress", async function(progress) {
             const videos = await ytsearch.search(progress.videoId);
-            const description = videos[0].title + ': ' + (Math.round(progress.progress.percentage * 100) / 100) + '\n\n'
+            const description = videos[0].title + ': ' + (Math.round(progress.progress.percentage * 100) / 100) + '%\n\n'
 
             const embed = new EmbedBuilder()
                 .setTitle('Tracks downloading in progress:')

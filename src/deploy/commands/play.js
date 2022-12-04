@@ -38,70 +38,6 @@ module.exports = {
                 .setAutocomplete(true)
                 .setRequired(false)),
 
-    handler: async ({ client, interaction }) => {
-        client.ytmp3.on("finished", function(err, data) {
-            if (client.player.state.status === 'idle') {
-                client.player.play(createAudioResource(data.file))
-                conn.subscribe(client.player)
-            } else {
-                client.audioChannel.send('**' + data.title + '**' + ' added to queue ' + client.queue.length + '.')
-            }
-            const embed = new EmbedBuilder()
-                .setTitle(data.title)
-                .setThumbnail(data.thumbnail)
-                .setAuthor({
-                    name: interaction.user.username,
-                    iconURL: interaction.user.displayAvatarURL()
-                })
-                .addFields({
-                    name: 'Queue position:', value: '' + client.queue.length
-                })
-
-            client.audioChannel.send({
-                embeds: [embed]
-            })
-            client.queue.enqueue(data)
-        });
-
-        client.player.on(AudioPlayerStatus.Idle, () => {
-            // console.log('Idling')
-            if (!client.queue.isEmpty && client.queue.length > 1) {
-                const data = client.queue.get(1)
-                client.queue.dequeue()
-                const resource = createAudioResource(data.file)
-
-                client.audioChannel.send('Now playing...')
-                const embed = new EmbedBuilder()
-                    .setTitle(data.title)
-                    .setThumbnail(data.thumbnail)
-                    .setAuthor({
-                        name: interaction.user.username,
-                        iconURL: interaction.user.displayAvatarURL()
-                    })
-
-                client.audioChannel.send({
-                    embeds: [embed]
-                })
-                client.player.play(resource)
-            }
-        })
-
-        client.player.on('error', error => {
-            console.log(JSON.stringify(error))
-        })
-        
-        client.ytmp3.on("error", function(error) {
-            console.log('Error downloading youtube stuff')
-            console.log(JSON.stringify(error));
-        });
-
-        /*
-        client.ytmp3.on("progress", function(progress) {
-            console.log("Progressing... " + progress.progress.percentage)
-        });
-        */
-    },
-
     async autocomplete(interaction) {
         const focused = interaction.options.getFocused(true)
 
@@ -131,6 +67,7 @@ module.exports = {
         const guildId = interaction.guildId
 
         let title
+        let videoId
 
         const vc = joinVoiceChannel({
             channelId: channel,
@@ -138,6 +75,7 @@ module.exports = {
             adapterCreator: interaction.guild.voiceAdapterCreator
         })
         conn = getVoiceConnection(guildId)
+        const videos = await ytsearch.search(track)
 
         if (url(track)) {
             switch (option) {
@@ -149,12 +87,7 @@ module.exports = {
                         start = track.indexOf('=')
                     }
                     start++
-                    const literal = track.substring(start)
-
-                    const videos = await ytsearch.search(track);
-                    title = videos[0].title
-
-                    client.ytmp3.download(literal)
+                    videoId = track.substring(start)
                     break
                 case "spotify":
                     break
@@ -162,14 +95,118 @@ module.exports = {
                     break
             }
         } else {
-            const videos = await ytsearch.search(track);
-
             videoId = videos[0].id.videoId
-            title = videos[0].title
-
-            client.ytmp3.download(videoId)
         }
+        title = videos[0].title
 
+        const file = fs.readdirSync('./youtube/mp3').filter((f) => f.includes(title) && f.endsWith(".mp3"))
         await interaction.reply({content: 'Adding ' + '**' + title + '**' + ' to the queue...'})
-    }
+
+        // If we already have the file somewhere in your local disk, we will
+        // add that to the queue instead of manually downloading it again,
+        // as it wastes time
+
+        if (file.length === 0) {
+            const videoData = { videoId: videoId, user: interaction.user }
+            client.videoUserData.enqueue(videoData)
+            client.ytmp3.download(videoId)
+        } else {
+            const data = { 
+                title: title,
+                user: interaction.user,
+                thumbnail: videos[0].snippet.thumbnails.url,
+                file: './youtube/mp3/' + title + '.mp3'
+            }
+            if (client.player.state.status === 'idle') {
+                client.player.play(createAudioResource(data.file))
+                conn.subscribe(client.player)
+            }
+            const embed = new EmbedBuilder()
+                .setTitle(data.title)
+                .setThumbnail(data.thumbnail)
+                .setAuthor({
+                    name: data.user.username,
+                    iconURL: data.user.displayAvatarURL()
+                })
+                .addFields({
+                    name: 'Queue position:', value: '' + client.queue.length
+                })
+            client.audioChannel.send({
+                content: '**' + data.title + '**' + ' added to queue ' + client.queue.length + '.', embeds: [embed]
+            })
+            client.queue.enqueue(data)
+        }
+    },
+
+    handler: async ({ client, interaction }) => {
+        client.ytmp3.on("finished", function(err, data) {
+            for (let i = 0; i < client.videoUserData.length; i++) {
+                if (client.videoUserData.get(i).videoId === data.videoId) {
+                    user = client.videoUserData.get(i).user
+                    data.user = user
+                    client.videoUserData.remove(i)
+                    break;
+                }
+            }
+            if (client.player.state.status === 'idle') {
+                client.player.play(createAudioResource(data.file))
+                conn.subscribe(client.player)
+            }
+            const embed = new EmbedBuilder()
+                .setTitle(data.title)
+                .setThumbnail(data.thumbnail)
+                .setAuthor({
+                    name: data.user.username,
+                    iconURL: data.user.displayAvatarURL()
+                })
+                .addFields({
+                    name: 'Queue position:', value: '' + client.queue.length
+                })
+
+            client.audioChannel.send({
+                content: 'Now playing...', embeds: [embed]
+            })
+            client.queue.enqueue(data)
+        });
+
+        client.player.on(AudioPlayerStatus.Idle, () => {
+            if (!client.queue.isEmpty && client.queue.length > 1) {
+                const data = client.queue.get(1)
+                client.queue.dequeue()
+
+                const resource = createAudioResource(data.file)
+
+                const embed = new EmbedBuilder()
+                    .setTitle(data.title)
+                    .setThumbnail(data.thumbnail)
+                    .setAuthor({
+                        name: data.user.username,
+                        iconURL: data.user.displayAvatarURL()
+                    })
+
+                client.audioChannel.send({
+                    content: 'Now playing...', embeds: [embed]
+                })
+                client.player.play(resource)
+            }
+        })
+
+        client.player.on('error', error => {
+            console.log(JSON.stringify(error))
+            if (client.videoData.length > 0) {
+                client.videoUserData.remove(client.videoUserData.length - 1)
+            }
+        })
+        
+        client.ytmp3.on("error", function(error) {
+            console.log('Error downloading youtube stuff')
+            console.log(JSON.stringify(error));
+        });
+
+        /*
+        client.ytmp3.on("progress", function(progress) {
+            console.log("Progressing... " + progress.progress.percentage)
+        });
+        */
+    },
 }

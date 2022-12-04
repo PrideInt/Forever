@@ -50,12 +50,14 @@ class Queue {
 }
 
 client.queue = new Queue()
+client.videoUserData = new Queue()
 client.player = createAudioPlayer()
 client.audioChannel
 client.ytmp3 = new YoutubeMp3Downloader({
     "ffmpegPath": "./node_modules/ffmpeg-static/ffmpeg.exe",
     "outputPath": "./youtube/mp3",
-    "youtubeVideoQuality": "highestaudio"
+    "youtubeVideoQuality": "highestaudio",
+    "queueParallelism": 5
 })
 
 client.once('ready', () => {

@@ -13,10 +13,15 @@ module.exports = {
 
         if (!client.queue.isEmpty) {
             for (let i = 0; i < client.queue.length; i++) {
-                description += '**' + i + ': ' + client.queue.get(i).title + '**\n\n' 
+                const data = client.queue.get(i)
+                if (i === 0) {
+                    description += '**' + 'Current: ' + data.title + '** - ' + data.user.username + '\n\n' 
+                } else {
+                    description += '**' + i + ': ' + data.title + '** - ' + data.user.username + '\n\n' 
+                }
             }
         } else {
-            description = '**Nothing in queue.**'
+            description += '**Nothing in queue.**'
         }
 
         const embed = new EmbedBuilder()
