@@ -1,0 +1,45 @@
+module.exports = {
+    name: "interactionCreate",
+    async execute(interaction, client) {
+        const {commands} = client
+        const {commandName} = interaction
+
+        if (interaction.isChatInputCommand()) {
+            const command = commands.get(commandName)
+
+            if (!command) {
+                return;
+            }
+            try {
+                if (command.name === 'play') {
+                    if (client.cycle === 0) {
+                        commands.get(commandName).handler({client, interaction})        
+                        client.cycle++
+                    }
+                }
+                try {
+                    await command.execute(interaction, client)
+                } catch (e) { 
+                    client.audioChannel = interaction.channel
+                    await command.execute(interaction, client)
+                }
+            } catch (e) {
+                console.error(e)
+
+                await interaction.reply({content: 'Something went wrong while executing the command.', ephemeral: true})
+            }
+        } else if (interaction.isAutocomplete()) {
+            const command = commands.get(commandName);
+
+            if (!command) {
+                console.error(`No command matching ${interaction.commandName} was found.`);
+                return;
+            }
+            try {
+                await command.autocomplete(interaction, client);
+            } catch (error) {
+                console.error(error);
+            }
+        }
+    }
+}
