@@ -14,10 +14,17 @@ module.exports = {
         if (!client.queue.isEmpty) {
             for (let i = 0; i < client.queue.length; i++) {
                 const data = client.queue.get(i)
-                if (i === 0) {
-                    description += '**' + 'Current: ' + data.title + '** - ' + data.user.username + '\n\n' 
-                } else {
-                    description += '**' + i + ': ' + data.title + '** - ' + data.user.username + '\n\n' 
+
+                switch (i) {
+                    case 0:
+                        description += '**Current:** ' + data.title + ' - **' + data.user.username + '**' + '\n\n' 
+                        break
+                    case 1:
+                        description += '**Next up :**' + data.title + ' - **' + data.user.username + "**" + '\n\n' 
+                        break
+                    default:
+                        description += '**' + i + '**: ' + data.title + ' - **' + data.user.username + '**' + '\n\n' 
+                        break
                 }
             }
         } else {

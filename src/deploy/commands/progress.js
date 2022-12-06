@@ -10,7 +10,9 @@ module.exports = {
         .setDescription('Returns the progress of downloading tracks.'),
 
     async execute(interaction, client) {
-        await interaction.reply('Fetching downloading tracks...')
+        await interaction.reply({
+            content: 'Fetching downloading tracks...', ephemeral: true
+        })
         const message = await interaction.channel.send('...')
 
         client.ytmp3.on("progress", async function(progress) {

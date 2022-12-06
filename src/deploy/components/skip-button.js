@@ -6,24 +6,27 @@ module.exports = {
     },
     async execute(interaction, client) {
         if (interaction.channel != client.audioChannel) {
-            await interaction.reply('You must use commands in **' + client.audioChannel.name + '**.')
+            await interaction.reply({
+                content: 'You must use commands in **' + client.audioChannel.name + '**.', ephemeral: true
+            })
             return;
         } else if (client.queue.isEmpty) {
-            await interaction.reply('No tracks to skip.')
+            await interaction.reply({
+                content: 'No tracks to skip.', ephemeral: true
+            })
             return;
         }
-        const data = client.queue.dequeue()
-
-        await interaction.reply('Skipping **' + data.title + '**.')
+        const data = client.queue.get(0)
 
         const embed = new EmbedBuilder()
-            .setTitle(data.title)
+            .setTitle('Skipping **' + data.title + '**.')
             .setThumbnail(data.thumbnail)
             .setAuthor({
                 name: interaction.user.username,
                 iconURL: interaction.user.displayAvatarURL()
             })
-        client.audioChannel.send({
+
+        interaction.reply({
             embeds: [embed]
         })
         client.player.stop()

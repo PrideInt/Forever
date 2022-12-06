@@ -54,10 +54,14 @@ module.exports = {
 
     async execute(interaction, client) {
         if (interaction.channel != client.audioChannel) {
-            await interaction.reply('You must use commands in **' + client.audioChannel.name + '**.')
+            await interaction.reply({
+                content: 'You must use commands in **' + client.audioChannel.name + '**.', ephemeral: true
+            })
             return;
         } else if (interaction.member.voice.channelId == null) {
-            await interaction.reply('You must use commands in **' + client.audioChannel.name + '**.')
+            await interaction.reply({
+                content: 'You must be in a voice channel to use this command.', ephemeral: true
+            })
             return;
         }
         const option = interaction.options.getString("source")
@@ -125,7 +129,7 @@ module.exports = {
                 file: './youtube/mp3/' + title + '.mp3'
             }
             let queuePosition = '' + client.queue.length
-            let message = '**' + data.title + '**' + ' added to queue ' + client.queue.length + '.'
+            let message = 'Added to queue'
             let addButton = false
 
             if (client.player.state.status === 'idle') {
@@ -133,7 +137,7 @@ module.exports = {
                 conn.subscribe(client.player)
 
                 queuePosition = 'Current'
-                message = 'Now playing...'
+                message = 'Now playing'
                 addButton = true
             }
             const embed = new EmbedBuilder()
@@ -144,7 +148,9 @@ module.exports = {
                     iconURL: data.user.displayAvatarURL()
                 })
                 .addFields({
-                    name: 'Queue position:', value: queuePosition
+                    name: 'Queue position:', value: queuePosition, inline: true
+                },{
+                    name: 'Status:', value: message, inline: true
                 })
 
             if (addButton) {
@@ -156,11 +162,11 @@ module.exports = {
                             .setStyle(ButtonStyle.Primary),
                     )
                 client.audioChannel.send({
-                    content: message, embeds: [embed], components: [row]
+                    embeds: [embed], components: [row]
                 })
             } else {
                 client.audioChannel.send({
-                    content: message, embeds: [embed]
+                    embeds: [embed]
                 })
             }
             client.queue.enqueue(data)
@@ -168,7 +174,6 @@ module.exports = {
     },
 
     handler: async ({ client, interaction }) => {
-        console.log('doing this')
         client.ytmp3.on("finished", function(err, data) {
             for (let i = 0; i < client.videoUserData.length; i++) {
                 if (client.videoUserData.get(i).videoId === data.videoId) {
@@ -179,7 +184,7 @@ module.exports = {
                 }
             }
             let queuePosition = '' + client.queue.length
-            let message = '**' + data.title + '**' + ' added to queue ' + client.queue.length + '.'
+            let message = 'Added to queue'
             let addButton = false
 
             if (client.player.state.status === 'idle') {
@@ -187,7 +192,7 @@ module.exports = {
                 conn.subscribe(client.player)
 
                 queuePosition = 'Current'
-                message = 'Now playing...'
+                message = 'Now playing'
                 addButton = true
             }
             const embed = new EmbedBuilder()
@@ -198,7 +203,9 @@ module.exports = {
                     iconURL: data.user.displayAvatarURL()
                 })
                 .addFields({
-                    name: 'Queue position:', value: queuePosition
+                    name: 'Queue position:', value: queuePosition, inline: true
+                },{
+                    name: 'Status:', value: message, inline: true
                 })
 
             if (addButton) {
@@ -210,11 +217,11 @@ module.exports = {
                             .setStyle(ButtonStyle.Primary),
                     )
                 client.audioChannel.send({
-                    content: message, embeds: [embed], components: [row]
+                    embeds: [embed], components: [row]
                 })
             } else {
                 client.audioChannel.send({
-                    content: message, embeds: [embed]
+                    embeds: [embed]
                 })
             }
             client.queue.enqueue(data)
@@ -222,17 +229,37 @@ module.exports = {
 
         client.player.on(AudioPlayerStatus.Idle, () => {
             if (!client.queue.isEmpty && client.queue.length >= 1) {
+                client.queue.dequeue()
+                if (client.queue.isEmpty) {   
+                    return;
+                }
                 const data = client.queue.get(0)
 
                 const resource = createAudioResource(data.file)
 
                 const embed = new EmbedBuilder()
-                    .setTitle(data.title)
+                    .setTitle('Now playing **' + data.title + '**.')
                     .setThumbnail(data.thumbnail)
                     .setAuthor({
                         name: data.user.username,
                         iconURL: data.user.displayAvatarURL()
                     })
+
+                if (client.queue.get(1) == null) {
+                    embed.setDescription('Nothing left in queue.')
+                } else if (client.queue.get(2) == null && client.queue.get(1) != null) {
+                    embed.addFields({ name: 'Next up:', value: client.queue.get(1).title })
+                } else {
+                    embed.addFields({
+                        name: 'Next up:', value: client.queue.get(1).title
+                    },{
+                        name: 'Queue 2:', value: client.queue.get(2).title, inline: true
+                    },{
+                        name: 'Queue 3:', value: client.queue.get(3) == null ? 'None' : client.queue.get(3).title, inline: true
+                    },{
+                        name: 'Queue 4:', value: client.queue.get(4) == null ? 'None' : client.queue.get(4).title, inline: true
+                    })
+                }
 
                 const row = new ActionRowBuilder()
                     .addComponents(
@@ -243,7 +270,7 @@ module.exports = {
                     )
 
                 client.audioChannel.send({
-                    content: 'Now playing...', embeds: [embed], components: [row]
+                    embeds: [embed], components: [row]
                 })
                 client.player.play(resource)
             }

@@ -34,10 +34,14 @@ module.exports = {
 
     async execute(interaction, client) {
         if (interaction.channel != client.audioChannel) {
-            await interaction.reply('You must use commands in **' + client.audioChannel.name + '**.')
+            await interaction.reply({
+                content: 'You must use commands in **' + client.audioChannel.name + '**.', ephemeral: true
+            })
             return;
         } else if (client.queue.isEmpty) {
-            await interaction.reply('No tracks to skip.')
+            await interaction.reply({
+                content: 'No tracks to skip.', ephemeral: true
+            })
             return;
         }
         const position = interaction.options.getString("position")
@@ -47,31 +51,28 @@ module.exports = {
         if (position === 'current') {
             data = client.queue.get(0)
 
-            await interaction.reply('Skipping **' + data.title + '**.')
-
             const embed = new EmbedBuilder()
-                .setTitle(data.title)
+                .setTitle('Skipping **' + data.title + '**.')
                 .setThumbnail(data.thumbnail)
                 .setAuthor({
                     name: interaction.user.username,
                     iconURL: interaction.user.displayAvatarURL()
                 })
-            client.audioChannel.send({
+            interaction.reply({
                 embeds: [embed]
             })
             client.player.stop()
         } else {
             data = client.queue.get(position)
-            await interaction.reply('Removing **' + data.title + '** from position ' + position + '.')
 
             const embed = new EmbedBuilder()
-                .setTitle(data.title)
+                .setTitle('Removing **' + data.title + '** from position ' + position + '.')
                 .setThumbnail(data.thumbnail)
                 .setAuthor({
                     name: interaction.user.username,
                     iconURL: interaction.user.displayAvatarURL()
                 })
-            client.audioChannel.send({
+            await interaction.reply({
                 embeds: [embed]
             })
             client.queue.remove(position)
