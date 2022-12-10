@@ -19,8 +19,8 @@ module.exports = {
         const focused = interaction.options.getFocused(true)
 
         if (focused.name === 'position') {
-            let choices = ['current']
-            for (let i = 1; i < client.queue.length; i++) {
+            let choices = ['current', 'all']
+            for (let i = 1; i < client.queue.get(interaction.guildId).length; i++) {
                 choices.push(i + '')
             }
             const filtered = choices.filter(choice => choice.startsWith(focused.value))
@@ -33,23 +33,24 @@ module.exports = {
     },
 
     async execute(interaction, client) {
-        if (interaction.channel != client.audioChannel) {
+        if (interaction.channel != client.audioChannels.get(interaction.guildId)) {
             await interaction.reply({
-                content: 'You must use commands in **' + client.audioChannel.name + '**.', ephemeral: true
+                content: 'You must use commands in **' + client.audioChannels.get(interaction.guildId).name + '**.', ephemeral: true
             })
             return;
-        } else if (client.queue.isEmpty) {
+        } else if (client.queue.get(interaction.guildId).isEmpty) {
             await interaction.reply({
                 content: 'No tracks to skip.', ephemeral: true
             })
             return;
         }
+        const queue = client.queue.get(interaction.guildId)
         const position = interaction.options.getString("position")
 
         let data
 
         if (position === 'current') {
-            data = client.queue.get(0)
+            data = queue.get(0)
 
             const embed = new EmbedBuilder()
                 .setTitle('Skipping **' + data.title + '**.')
@@ -61,9 +62,24 @@ module.exports = {
             interaction.reply({
                 embeds: [embed]
             })
-            client.player.stop()
+            client.players.get(interaction.guildId).stop()
+        } else if (position === 'all') {
+            queue.clear()
+            data = queue.get(position)
+
+            const embed = new EmbedBuilder()
+                .setTitle('Skipping all...')
+                .setThumbnail('https://cdn.discordapp.com/attachments/944560551621709848/1048672072047546398/IMG_0838.gif')
+                .setAuthor({
+                    name: 'Forever',
+                    iconURL: 'https://cdn.discordapp.com/attachments/944560551621709848/1038285032604827728/IMG_9412.jpg'
+                })
+            interaction.reply({
+                embeds: [embed]
+            })
+            client.players.get(interaction.guildId).stop()
         } else {
-            data = client.queue.get(position)
+            data = queue.get(position)
 
             const embed = new EmbedBuilder()
                 .setTitle('Removing **' + data.title + '** from position ' + position + '.')
@@ -75,7 +91,7 @@ module.exports = {
             await interaction.reply({
                 embeds: [embed]
             })
-            client.queue.remove(position)
+            queue.remove(position)
         }
     }
 }

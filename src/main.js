@@ -10,11 +10,6 @@ const client = new Client({
 const YoutubeMp3Downloader = require('youtube-mp3-downloader')
 const fs = require('fs')
 
-client.commands = new Collection()
-client.commandArr = []
-client.buttons = new Collection()
-client.cycle = 0
-
 class Queue {
     constructor() {
         this.elements = [];
@@ -50,10 +45,18 @@ class Queue {
     }
 }
 
-client.queue = new Queue()
+client.commands = new Collection()
+client.commandArr = []
+client.buttons = new Collection()
+client.cycle = 0
+
+client.queue = new Map()
 client.videoUserData = new Queue()
-client.player = createAudioPlayer()
-client.audioChannel
+
+client.players = new Map()
+client.audioChannels = new Map()
+client.current = new Map()
+
 client.ytmp3 = new YoutubeMp3Downloader({
     "ffmpegPath": "./node_modules/ffmpeg-static/ffmpeg.exe",
     "outputPath": "./youtube/mp3",

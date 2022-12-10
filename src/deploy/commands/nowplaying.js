@@ -9,7 +9,7 @@ module.exports = {
         .setDescription('Displays the current track.'),
 
     async execute(interaction, client) {
-        const data = client.queue.get(0)
+        const data = client.queue.get(interaction.guildId).get(0)
         let embed
 
         try {
@@ -19,7 +19,7 @@ module.exports = {
         } catch (e) { 
             embed = new EmbedBuilder()
                 .setTitle('Nothing playing.')
-                .setThumbnail('https://cdn.discordapp.com/attachments/944560551621709848/1038285032604827728/IMG_9412.jpg')
+                .setThumbnail('https://cdn.discordapp.com/attachments/944560551621709848/1048672072047546398/IMG_0838.gif')
         }
 
         await interaction.reply({

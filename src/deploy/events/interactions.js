@@ -17,8 +17,11 @@ module.exports = {
                 }
                 try {
                     await command.execute(interaction, client)
-                } catch (e) { 
-                    client.audioChannel = interaction.channel
+                } catch (e) {
+                    if (!client.audioChannels.has(interaction.guildId)) {
+                        client.audioChannels.set(interaction.guildId, interaction.channel)
+                        client.connections++
+                    }
                     await command.execute(interaction, client)
                 }
             } catch (e) {

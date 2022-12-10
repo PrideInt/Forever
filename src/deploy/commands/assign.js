@@ -9,7 +9,7 @@ module.exports = {
         .setDescription('Assigns bot to a specific channel.'),
 
     async execute(interaction, client) {
-        client.audioChannel = interaction.channel
+        client.audioChannels.set(interaction.guildId, interaction.channel)
         await interaction.reply({content: 'Assigned channel to **' + interaction.channel.name + '**.'})
     }
 }

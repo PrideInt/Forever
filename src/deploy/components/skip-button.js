@@ -5,18 +5,18 @@ module.exports = {
         name: 'skip-b'
     },
     async execute(interaction, client) {
-        if (interaction.channel != client.audioChannel) {
+        if (interaction.channel != client.audioChannels.get(interaction.guildId)) {
             await interaction.reply({
-                content: 'You must use commands in **' + client.audioChannel.name + '**.', ephemeral: true
+                content: 'You must use commands in **' + client.audioChannels.get(interaction.guildId).name + '**.', ephemeral: true
             })
             return;
-        } else if (client.queue.isEmpty) {
+        } else if (client.queue.get(interaction.guildId).isEmpty) {
             await interaction.reply({
                 content: 'No tracks to skip.', ephemeral: true
             })
             return;
         }
-        const data = client.queue.get(0)
+        const data = client.queue.get(interaction.guildId).get(0)
 
         const embed = new EmbedBuilder()
             .setTitle('Skipping **' + data.title + '**.')
@@ -29,6 +29,6 @@ module.exports = {
         interaction.reply({
             embeds: [embed]
         })
-        client.player.stop()
+        client.players.get(interaction.guildId).stop()
     }
 }

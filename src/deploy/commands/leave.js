@@ -10,9 +10,8 @@ module.exports = {
         .setDescription('Leave all voice channel it\'s in.'),
 
     async execute(interaction, client) {
-        client.player.stop()
-        client.queue.clear()
-        createAudioPlayer().stop()
+        client.players.get(interaction.guildId).stop()
+        client.queue.get(interaction.guildId).clear()
         getVoiceConnection(interaction.guildId).destroy()
 
         await interaction.reply({content: 'Left the voice channel.'})

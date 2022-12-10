@@ -11,24 +11,34 @@ module.exports = {
     async execute(interaction, client) {
         let description = ''
 
-        if (!client.queue.isEmpty) {
-            for (let i = 0; i < client.queue.length; i++) {
-                const data = client.queue.get(i)
+        const queue = client.queue.get(interaction.guildId)
 
-                switch (i) {
-                    case 0:
-                        description += '**Current:** ' + data.title + ' - **' + data.user.username + '**' + '\n\n' 
-                        break
-                    case 1:
-                        description += '**Next up :**' + data.title + ' - **' + data.user.username + "**" + '\n\n' 
-                        break
-                    default:
-                        description += '**' + i + '**: ' + data.title + ' - **' + data.user.username + '**' + '\n\n' 
-                        break
+        try {
+            if (!queue.isEmpty) {
+                for (let i = 0; i < queue.length; i++) {
+                    const data = queue.get(i)
+
+                    switch (i) {
+                        case 0:
+                            description += '**Current:** ' + data.title + ' - **' + data.user.username + '**' + '\n\n' 
+                            break
+                        case 1:
+                            description += '**Next up :** ' + data.title + ' - **' + data.user.username + "**" + '\n\n' 
+                            break
+                        default:
+                            description += '**Queue ' + i + '**: ' + data.title + ' - **' + data.user.username + '**' + '\n\n' 
+                            break
+                    }
                 }
+            } else {
+                description += '**Nothing in queue.**'
             }
-        } else {
-            description += '**Nothing in queue.**'
+        } catch (e) {
+            await interaction.reply({
+                content: 'Forever is not connected.',
+                ephemeral: true
+            })
+            return;
         }
 
         const embed = new EmbedBuilder()

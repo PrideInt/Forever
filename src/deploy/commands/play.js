@@ -16,7 +16,40 @@ const url = input => {
     return !!regex.test(input)
 }
 
-let conn
+class Queue {
+    constructor() {
+        this.elements = [];
+    }
+    enqueue(element) {
+        this.elements.push(element);
+    }
+    dequeue() {
+        return this.elements.shift();
+    }
+    peek() {
+        return this.elements[0];
+    }
+    queue() {
+        return this.elements;
+    }
+    remove(position) {
+        return this.elements.splice(position, 1);
+    }
+    get(position) {
+        return this.elements[position];
+    }
+    clear() {
+        while (!this.isEmpty) {
+            this.elements.shift()
+        }
+    }
+    get length() {
+        return this.elements.length;
+    }
+    get isEmpty() {
+        return this.elements.length === 0;
+    }
+}
 
 module.exports = {
     name: 'play',
@@ -36,7 +69,7 @@ module.exports = {
                 .setName("source")
                 .setDescription("Get music from a source.")
                 .setAutocomplete(true)
-                .setRequired(false)),
+                .setRequired(true)),
 
     async autocomplete(interaction) {
         const focused = interaction.options.getFocused(true)
@@ -53,9 +86,21 @@ module.exports = {
     },
 
     async execute(interaction, client) {
-        if (interaction.channel != client.audioChannel) {
+        if (!client.queue.has(interaction.guildId)) {
+            client.queue.set(interaction.guildId, new Queue())
+        }
+        if (!client.players.has(interaction.guildId)) {
+            const audioPlayer = createAudioPlayer()
+            client.players.set(interaction.guildId, audioPlayer)
+            await this.onPlayer(interaction, client, audioPlayer)
+        }
+        const audioChannel = client.audioChannels.get(interaction.guildId)
+        const player = client.players.get(interaction.guildId)
+        const queue = client.queue.get(interaction.guildId)
+
+        if (interaction.channel != audioChannel) {
             await interaction.reply({
-                content: 'You must use commands in **' + client.audioChannel.name + '**.', ephemeral: true
+                content: 'You must use commands in **' + audioChannel.name + '**.', ephemeral: true
             })
             return;
         } else if (interaction.member.voice.channelId == null) {
@@ -66,6 +111,13 @@ module.exports = {
         }
         const option = interaction.options.getString("source")
         const track = interaction.options.getString("track")
+
+        if (track.length == 0) {
+            await interaction.reply({
+                content: 'Enter a track.', ephemeral: true
+            })
+            return;
+        }
 
         const channel = interaction.member.voice.channelId
         const guildId = interaction.guildId
@@ -79,7 +131,7 @@ module.exports = {
             guildId: guildId,
             adapterCreator: interaction.guild.voiceAdapterCreator
         })
-        conn = getVoiceConnection(guildId)
+        const conn = getVoiceConnection(guildId)
 
         if (url(track)) {
             switch (option) {
@@ -91,7 +143,7 @@ module.exports = {
                         start = track.indexOf('=')
                     }
                     start++
-                    videoId = track.substring(start)
+                    videoId = track.substring(start, start + 11)
 
                     videos = await ytsearch.search(videoId)
                     break
@@ -106,7 +158,9 @@ module.exports = {
         }
         title = videos[0].title
 
-        const file = fs.readdirSync('./youtube/mp3').filter((f) => f.includes(title) && f.endsWith(".mp3"))
+        const fileName = title.replace('\\', '').replace('/', '').replace(':', '').replace('*', '').replace('?', '').replace('"', '').replace('|', '').replace('<', '').replace('>', '')
+
+        const file = fs.readdirSync('./youtube/mp3').filter((f) => f.includes(fileName) && f.endsWith(".mp3"))
         try {
             await interaction.reply({content: 'Adding ' + '**' + title + '**' + ' to the queue...'})
         } catch (e) { 
@@ -118,7 +172,7 @@ module.exports = {
         // as it wastes time
 
         if (file.length === 0) {
-            const videoData = { videoId: videoId, user: interaction.user }
+            const videoData = { videoId: videoId, user: interaction.user, channel: interaction.channel, guildId: interaction.guildId }
             client.videoUserData.enqueue(videoData)
             client.ytmp3.download(videoId)
         } else {
@@ -126,15 +180,17 @@ module.exports = {
                 title: title,
                 user: interaction.user,
                 thumbnail: videos[0].snippet.thumbnails.url,
-                file: './youtube/mp3/' + title + '.mp3'
+                file: './youtube/mp3/' + title + '.mp3',
+                channel: audioChannel,
+                guildId: interaction.guildId
             }
-            let queuePosition = '' + client.queue.length
+            let queuePosition = '' + queue.length
             let message = 'Added to queue'
             let addButton = false
 
-            if (client.player.state.status === 'idle') {
-                client.player.play(createAudioResource(data.file))
-                conn.subscribe(client.player)
+            if (player.state.status === 'idle') {
+                player.play(createAudioResource(data.file))
+                conn.subscribe(player)
 
                 queuePosition = 'Current'
                 message = 'Now playing'
@@ -159,17 +215,19 @@ module.exports = {
                         new ButtonBuilder()
                             .setCustomId('skip-b')
                             .setLabel('Skip')
-                            .setStyle(ButtonStyle.Primary),
+                            .setStyle(ButtonStyle.Danger),
                     )
-                client.audioChannel.send({
+                    
+                const message = audioChannel.send({
                     embeds: [embed], components: [row]
                 })
+                client.current.set(interaction.guildId, message.id)
             } else {
-                client.audioChannel.send({
+                audioChannel.send({
                     embeds: [embed]
                 })
             }
-            client.queue.enqueue(data)
+            queue.enqueue(data)
         }
     },
 
@@ -177,19 +235,29 @@ module.exports = {
         client.ytmp3.on("finished", function(err, data) {
             for (let i = 0; i < client.videoUserData.length; i++) {
                 if (client.videoUserData.get(i).videoId === data.videoId) {
-                    user = client.videoUserData.get(i).user
+                    const videoData = client.videoUserData.get(i)
+
+                    const user = videoData.user
+                    const guildId = videoData.guildId
+                    const audioChannel = videoData.channel
+
                     data.user = user
+                    data.guildId = guildId
+                    data.channel = audioChannel
+
                     client.videoUserData.remove(i)
                     break;
                 }
             }
-            let queuePosition = '' + client.queue.length
+            const queue = client.queue.get(data.guildId)
+            let queuePosition = '' + queue.length
             let message = 'Added to queue'
             let addButton = false
+            const player = client.players.get(data.guildId)
 
-            if (client.player.state.status === 'idle') {
-                client.player.play(createAudioResource(data.file))
-                conn.subscribe(client.player)
+            if (player.state.status === 'idle') {
+                player.play(createAudioResource(data.file))
+                getVoiceConnection(data.guildId).subscribe(player)
 
                 queuePosition = 'Current'
                 message = 'Now playing'
@@ -214,26 +282,36 @@ module.exports = {
                         new ButtonBuilder()
                             .setCustomId('skip-b')
                             .setLabel('Skip')
-                            .setStyle(ButtonStyle.Primary),
+                            .setStyle(ButtonStyle.Danger),
                     )
-                client.audioChannel.send({
+                const message = data.channel.send({
                     embeds: [embed], components: [row]
                 })
+                client.current.set(interaction.guildId, message.id)
             } else {
-                client.audioChannel.send({
+                data.channel.send({
                     embeds: [embed]
                 })
             }
-            client.queue.enqueue(data)
+            queue.enqueue(data)
         });
 
-        client.player.on(AudioPlayerStatus.Idle, () => {
-            if (!client.queue.isEmpty && client.queue.length >= 1) {
-                client.queue.dequeue()
-                if (client.queue.isEmpty) {   
+        /*
+        client.ytmp3.on("progress", function(progress) {
+            console.log("Progressing... " + progress.progress.percentage)
+        });
+        */
+    },
+
+    async onPlayer(interaction, client, player) {
+        const queue = client.queue.get(interaction.guildId)
+        await player.on(AudioPlayerStatus.Idle, () => {
+            if (!queue.isEmpty && queue.length >= 1) {
+                queue.dequeue()
+                if (queue.isEmpty) {   
                     return;
                 }
-                const data = client.queue.get(0)
+                const data = queue.get(0)
 
                 const resource = createAudioResource(data.file)
 
@@ -245,19 +323,19 @@ module.exports = {
                         iconURL: data.user.displayAvatarURL()
                     })
 
-                if (client.queue.get(1) == null) {
+                if (queue.get(1) == null) {
                     embed.setDescription('Nothing left in queue.')
-                } else if (client.queue.get(2) == null && client.queue.get(1) != null) {
-                    embed.addFields({ name: 'Next up:', value: client.queue.get(1).title })
+                } else if (queue.get(2) == null && queue.get(1) != null) {
+                    embed.addFields({ name: 'Next up:', value: queue.get(1).title })
                 } else {
                     embed.addFields({
-                        name: 'Next up:', value: client.queue.get(1).title
+                        name: 'Next up:', value: queue.get(1).title
                     },{
-                        name: 'Queue 2:', value: client.queue.get(2).title, inline: true
+                        name: 'Queue 2:', value: queue.get(2).title, inline: true
                     },{
-                        name: 'Queue 3:', value: client.queue.get(3) == null ? 'None' : client.queue.get(3).title, inline: true
+                        name: 'Queue 3:', value: queue.get(3) == null ? 'None' : queue.get(3).title, inline: true
                     },{
-                        name: 'Queue 4:', value: client.queue.get(4) == null ? 'None' : client.queue.get(4).title, inline: true
+                        name: 'Queue 4:', value: queue.get(4) == null ? 'None' : queue.get(4).title, inline: true
                     })
                 }
 
@@ -266,27 +344,23 @@ module.exports = {
                         new ButtonBuilder()
                             .setCustomId('skip-b')
                             .setLabel('Skip')
-                            .setStyle(ButtonStyle.Primary),
+                            .setStyle(ButtonStyle.Danger),
                     )
 
-                client.audioChannel.send({
+                const message = data.channel.send({
                     embeds: [embed], components: [row]
                 })
-                client.player.play(resource)
+                client.current.set(interaction.guildId, message.id)
+
+                client.players.get(data.guildId).play(resource)
             }
         })
 
-        client.player.on('error', error => {
+        player.on('error', error => {
             console.log(JSON.stringify(error))
             if (client.videoData.length > 0) {
                 client.videoUserData.remove(client.videoUserData.length - 1)
             }
         })
-
-        /*
-        client.ytmp3.on("progress", function(progress) {
-            console.log("Progressing... " + progress.progress.percentage)
-        });
-        */
     },
 }
