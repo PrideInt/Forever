@@ -8,6 +8,7 @@ const client = new Client({
 })
 
 const YoutubeMp3Downloader = require('youtube-mp3-downloader')
+// const { Player } = require('discord-player')
 const fs = require('fs')
 
 class Queue {
@@ -61,8 +62,13 @@ client.ytmp3 = new YoutubeMp3Downloader({
     "ffmpegPath": "./node_modules/ffmpeg-static/ffmpeg.exe",
     "outputPath": "./youtube/mp3",
     "youtubeVideoQuality": "highestaudio",
-    "queueParallelism": 5
+    "queueParallelism": 5,
+    "progressTimeout": 500
 })
+
+client.dlProgress = new Map()
+
+// client.discordPlayer = new Player(client)
 
 client.once('ready', () => {
     console.log('Online');

@@ -3,7 +3,7 @@ const { joinVoiceChannel, getVoiceConnection, createAudioPlayer, createAudioReso
 
 const fs = require('fs')
 const ffmpeg = require('ffmpeg-static')
-const ytsearch = require('youtube-search-without-api-key');
+const ytsearch = require('youtube-search-without-api-key')
 
 const url = input => {
     var regex = new RegExp('^(https?:\\/\\/)?'+ // validate protocol
@@ -15,6 +15,8 @@ const url = input => {
 
     return !!regex.test(input)
 }
+
+const ytdl = require('ytdl-core')
 
 class Queue {
     constructor() {
@@ -69,13 +71,27 @@ module.exports = {
                 .setName("source")
                 .setDescription("Get music from a source.")
                 .setAutocomplete(true)
-                .setRequired(true)),
+                .setRequired(true))
+        .addStringOption(quality => 
+            quality
+                .setName("quality")
+                .setDescription("Play track according to quality.")
+                .setAutocomplete(true)
+                .setRequired(false)),
 
     async autocomplete(interaction) {
         const focused = interaction.options.getFocused(true)
 
         if (focused.name === 'source') {
             const choices = ['youtube', 'spotify', 'soundcloud']
+            const filtered = choices.filter(choice => choice.startsWith(focused.value))
+
+            await interaction.respond(filtered.map(choice => ({
+                name: choice,
+                value: choice
+            })))
+        } else if (focused.name === 'quality') {
+            const choices = ['low', 'high']
             const filtered = choices.filter(choice => choice.startsWith(focused.value))
 
             await interaction.respond(filtered.map(choice => ({
@@ -111,6 +127,7 @@ module.exports = {
         }
         const option = interaction.options.getString("source")
         const track = interaction.options.getString("track")
+        const quality = interaction.options.getString("quality")
 
         if (track.length == 0) {
             await interaction.reply({
@@ -123,8 +140,8 @@ module.exports = {
         const guildId = interaction.guildId
 
         let title
+        let thumbnail
         let videoId
-        let videos
 
         const vc = joinVoiceChannel({
             channelId: channel,
@@ -133,30 +150,61 @@ module.exports = {
         })
         const conn = getVoiceConnection(guildId)
 
-        if (url(track)) {
-            switch (option) {
-                case "youtube":
-                    let start
-                    if (track.includes('.be')) {
-                        start = track.indexOf('/', 10)
-                    } else {
-                        start = track.indexOf('=')
-                    }
-                    start++
-                    videoId = track.substring(start, start + 11)
+        /*
+        if (quality === 'low') {
+            const info = await ytdl.getInfo(track, {
+                filter: 'audioonly',
+                quality: 'highest'
+            })
+            await ytdl.downloadFromInfo(info).pipe(fs.createWriteStream('./youtube/mp3/testtest.mp3'));
+            return;
+        }
+        */
 
-                    videos = await ytsearch.search(videoId)
-                    break
-                case "spotify":
-                    break
-                case "soundcloud":
-                    break
+        if (url(track)) {
+            if (option === '') {
+                let start
+                if (track.includes('.be')) {
+                    start = track.indexOf('/', 10)
+                } else {
+                    start = track.indexOf('=')
+                }
+                start++
+                videoId = track.substring(start, start + 11)
+
+                const videoInfo = await ytdl.getBasicInfo(track)
+                title = videoInfo.videoDetails.title
+                videoId = videoInfo.videoDetails.videoId
+                thumbnail = videoInfo.thumbnail_url
+            } else {
+                switch (option) {
+                    case "youtube":
+                        let start
+                        if (track.includes('.be')) {
+                            start = track.indexOf('/', 10)
+                        } else {
+                            start = track.indexOf('=')
+                        }
+                        start++
+                        videoId = track.substring(start, start + 11)
+    
+                        const videoInfo = await ytdl.getBasicInfo(track)
+                        title = videoInfo.videoDetails.title
+                        videoId = videoInfo.videoDetails.videoId
+                        thumbnail = videoInfo.thumbnail_url
+                        break
+                    case "spotify":
+                        break
+                    case "soundcloud":
+                        break
+                }
             }
         } else {
-            videos = await ytsearch.search(track)
+            const videos = await ytsearch.search(track)
             videoId = videos[0].id.videoId
+            title = videos[0].title
+            thumbnail = videos[0].snippet.thumbnails.url
         }
-        title = videos[0].title
 
         const fileName = title.replace('\\', '').replace('/', '').replace(':', '').replace('*', '').replace('?', '').replace('"', '').replace('|', '').replace('<', '').replace('>', '')
 
@@ -171,6 +219,8 @@ module.exports = {
         // add that to the queue instead of manually downloading it again,
         // as it wastes time
 
+        client.dlProgress.set(title, '0')
+
         if (file.length === 0) {
             const videoData = { videoId: videoId, user: interaction.user, channel: interaction.channel, guildId: interaction.guildId }
             client.videoUserData.enqueue(videoData)
@@ -179,7 +229,7 @@ module.exports = {
             const data = { 
                 title: title,
                 user: interaction.user,
-                thumbnail: videos[0].snippet.thumbnails.url,
+                thumbnail: thumbnail,
                 file: './youtube/mp3/' + title + '.mp3',
                 channel: audioChannel,
                 guildId: interaction.guildId
@@ -232,6 +282,14 @@ module.exports = {
     },
 
     handler: async ({ client, interaction }) => {
+        client.ytmp3.on("error", function(error) {
+            console.log(error)
+        })
+        client.ytmp3.on("progress", async function(progress) {
+            const videoInfo = await ytdl.getBasicInfo('https://www.youtube.com/watch?v=' + progress.videoId);
+            title = videoInfo.videoDetails.title
+            client.dlProgress.set(title, progress.progress.percentage + '')
+        })
         client.ytmp3.on("finished", function(err, data) {
             for (let i = 0; i < client.videoUserData.length; i++) {
                 if (client.videoUserData.get(i).videoId === data.videoId) {

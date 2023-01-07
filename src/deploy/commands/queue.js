@@ -23,10 +23,10 @@ module.exports = {
                             description += '**Current:** ' + data.title + ' - **' + data.user.username + '**' + '\n\n' 
                             break
                         case 1:
-                            description += '**Next up :** ' + data.title + ' - **' + data.user.username + "**" + '\n\n' 
+                            description += '**Next up:** ' + data.title + ' - **' + data.user.username + "**" + '\n\n' 
                             break
                         default:
-                            description += '**Queue ' + i + '**: ' + data.title + ' - **' + data.user.username + '**' + '\n\n' 
+                            description += '**Queue ' + i + ':** ' + data.title + ' - **' + data.user.username + '**' + '\n\n' 
                             break
                     }
                 }
