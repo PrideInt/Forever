@@ -1,6 +1,8 @@
 # Forever
 
-![euphoriatear](https://raw.githubusercontent.com/PrideInt/Forever/readme/euphoriatear.gif)
+![euphoriatear](https://raw.githubusercontent.com/PrideInt/Forever/readme/readme/euphoriatear.gif)
+
+> ***"Every time I feel good I think it'll last forever."*** Yes this is Zendaya's eye.
 
 ## What it is
 
@@ -16,50 +18,50 @@ Forever automatically plays the next track on the queue (if there are any left),
 over or if it is skipped. The embed also shows the current track playing, the next track up and the next 3 tracks
 on the queue.
 
-> ![foreverautoplay](https://raw.githubusercontent.com/PrideInt/Forever/readme/foreverautoplay.png)
+> ![foreverautoplay](https://raw.githubusercontent.com/PrideInt/Forever/readme/readme/foreverautoplay.png)
 
 ### /play
 
-> ![foreverplay](https://raw.githubusercontent.com/PrideInt/Forever/readme/foreverplay.png)
+> ![foreverplay](https://raw.githubusercontent.com/PrideInt/Forever/readme/readme/foreverplay.png)
 
 The play command plays a track given an inputted track option (can be either keywords or a link) and a source selection
 type (e.g. YouTube, Spotify, SoundCloud, however only YouTube is the only functional source as of now). You
 must be in a voice channel in order to perform this command. Additionally, the very first play command in a given
 channel will assign the bot to broadcast and be used only in that channel. To change this, you must use the assign command.
 
-> ![foreverplayaction](https://raw.githubusercontent.com/PrideInt/Forever/readme/foreverplayaction.png)
+> ![foreverplayaction](https://raw.githubusercontent.com/PrideInt/Forever/readme/readme/foreverplayaction.png)
 
 ### /skip
 
-> ![foreverskip](https://raw.githubusercontent.com/PrideInt/Forever/readme/foreverskip.png)
+> ![foreverskip](https://raw.githubusercontent.com/PrideInt/Forever/readme/readme/foreverskip.png)
 
 The skip command skips the track in a given position (current - queue size). You may also use the skip button to skip
 a track.
 
-> ![foreverskipaction](https://raw.githubusercontent.com/PrideInt/Forever/readme/foreverskipaction.png)
+> ![foreverskipaction](https://raw.githubusercontent.com/PrideInt/Forever/readme/readme/foreverskipaction.png)
 
 ### /assign
 
-> ![foreverassign](https://raw.githubusercontent.com/PrideInt/Forever/readme/foreverassign.png)
+> ![foreverassign](https://raw.githubusercontent.com/PrideInt/Forever/readme/readme/foreverassign.png)
 
 The assign command assigns the bot to a specific channel (the channel the assign command is used in). Commands will
 only broadcast and work in this channel unless changed again using this command.
 
 ### /progress
 
-> ![foreverprogress](https://raw.githubusercontent.com/PrideInt/Forever/readme/foreverprogress.png)
+> ![foreverprogress](https://raw.githubusercontent.com/PrideInt/Forever/readme/readme/foreverprogress.png)
 
 The progress command shows the progress (percentage of download completion) of the currently downloading tracks.
 
-> ![foreverprogressaction](https://raw.githubusercontent.com/PrideInt/Forever/readme/foreverprogressaction.png)
+> ![foreverprogressaction](https://raw.githubusercontent.com/PrideInt/Forever/readme/readme/foreverprogressaction.png)
 
 ### /nowplaying
 
-> ![forevernp](https://raw.githubusercontent.com/PrideInt/Forever/readme/forevernp.png)
+> ![forevernp](https://raw.githubusercontent.com/PrideInt/Forever/readme/readme/forevernp.png)
 
 The nowplaying command shows the current track that is playing.
 
-> ![forevernpaction](https://raw.githubusercontent.com/PrideInt/Forever/readme/forevernpaction.png)
+> ![forevernpaction](https://raw.githubusercontent.com/PrideInt/Forever/readme/readme/forevernpaction.png)
 
 ## Dependencies
 
