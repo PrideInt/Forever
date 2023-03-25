@@ -19,10 +19,10 @@ module.exports = {
         }
         const embed = new EmbedBuilder()
             .setTitle('Tracks downloading in progress:')
-            .setThumbnail('https://raw.githubusercontent.com/PrideInt/Forever/readme/euphoriatear.gif')
+            .setThumbnail('https://raw.githubusercontent.com/PrideInt/Forever/readme/readme/euphoriatear.gif')
             .setAuthor({
                 name: 'Forever',
-                iconURL: 'https://raw.githubusercontent.com/PrideInt/Forever/readme/euphoriatear.jpg'
+                iconURL: 'https://raw.githubusercontent.com/PrideInt/Forever/readme/readme/euphoriatear.jpg'
             })
             .setDescription(description)
 

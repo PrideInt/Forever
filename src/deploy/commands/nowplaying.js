@@ -19,7 +19,7 @@ module.exports = {
         } catch (e) { 
             embed = new EmbedBuilder()
                 .setTitle('Nothing playing.')
-                .setThumbnail('https://raw.githubusercontent.com/PrideInt/Forever/readme/euphoriatear.gif')
+                .setThumbnail('https://raw.githubusercontent.com/PrideInt/Forever/readme/readme/euphoriatear.gif')
         }
 
         await interaction.reply({

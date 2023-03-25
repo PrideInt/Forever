@@ -69,10 +69,10 @@ module.exports = {
 
             const embed = new EmbedBuilder()
                 .setTitle('Skipping all...')
-                .setThumbnail('https://cdn.discordapp.com/attachments/944560551621709848/1048672072047546398/IMG_0838.gif')
+                .setThumbnail('https://raw.githubusercontent.com/PrideInt/Forever/readme/readme/euphoriatear.gif')
                 .setAuthor({
                     name: 'Forever',
-                    iconURL: 'https://cdn.discordapp.com/attachments/944560551621709848/1038285032604827728/IMG_9412.jpg'
+                    iconURL: 'https://raw.githubusercontent.com/PrideInt/Forever/readme/readme/euphoriatear.jpg'
                 })
             interaction.reply({
                 embeds: [embed]
