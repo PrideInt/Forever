@@ -2,6 +2,8 @@
 
 ![euphoriatear](https://raw.githubusercontent.com/PrideInt/Forever/readme/euphoriatear.gif)
 
+> ***"Every time I feel good I think it'll last forever."*** Yes this is Zendaya's eye.
+
 ## What it is
 
 Forever is a music bot that I made for myself (Pride) for Discord. It's pretty easy to use and currently only supports
