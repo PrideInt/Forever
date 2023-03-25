@@ -40,6 +40,18 @@ a track.
 
 > ![foreverskipaction](https://raw.githubusercontent.com/PrideInt/Forever/readme/readme/foreverskipaction.png)
 
+### /queue
+
+The queue command shows the list of all tracks on the queue.
+
+> ![foreverqueueaction](https://raw.githubusercontent.com/PrideInt/Forever/readme/readme/foreverqueueaction.png)
+
+### /leave
+
+> ![foreverleave](https://raw.githubusercontent.com/PrideInt/Forever/readme/readme/foreverleave.png)
+
+The leave command forces the bot to leave the voice channel.
+
 ### /assign
 
 > ![foreverassign](https://raw.githubusercontent.com/PrideInt/Forever/readme/readme/foreverassign.png)
